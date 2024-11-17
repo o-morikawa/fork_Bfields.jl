@@ -4,6 +4,32 @@ using Gaugefields
 using LinearAlgebra
 import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
 
+function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, temps; displayon=true)
+    Δτ = 1.0 / MDsteps
+    gauss_distribution!(p)
+    Sold = calc_action(gauge_action, U, p)
+    substitute_U!(Uold, U)
+
+    for itrj = 1:MDsteps
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action, temps)
+
+        P_update!(U, p, 1.0, Δτ, Dim, gauge_action, temps)
+
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action, temps)
+    end
+    Snew = calc_action(gauge_action, U, p)
+    if displayon
+        println("Sold = $Sold, Snew = $Snew")
+        println("Snew - Sold = $(Snew-Sold)")
+    end
+    ratio = min(1, exp(-Snew + Sold))
+    if rand() > ratio
+        substitute_U!(U, Uold)
+        return false
+    else
+        return true
+    end
+end
 
 function HMC_test_4D(NX, NY, NZ, NT, NC, β)
     Dim = 4
