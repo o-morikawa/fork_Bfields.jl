@@ -2,7 +2,41 @@ using Gaugefields
 using LinearAlgebra
 import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
 
+function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, nn, dSdU, temps; displayon=true)
+    Δτ = 1.0 / MDsteps
+    gauss_distribution!(p)
 
+    Uout, Uout_multi, _ = calc_smearedU(U, nn)
+    Sold = calc_action(gauge_action, Uout, p)
+
+    substitute_U!(Uold, U)
+
+    for itrj = 1:MDsteps
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action, temps)
+
+        P_update!(U, p, 1.0, Δτ, Dim, gauge_action, dSdU, nn, temps)
+
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action, temps)
+    end
+
+    Uout, Uout_multi, _ = calc_smearedU(U, nn)
+    Snew = calc_action(gauge_action, Uout, p)
+
+    if displayon
+        println("Sold = $Sold, Snew = $Snew")
+        println("Snew - Sold = $(Snew-Sold)")
+    end
+
+    accept = exp(Sold - Snew) >= rand()
+
+    if accept != true #rand() > ratio
+        substitute_U!(U, Uold)
+        return false
+    else
+        return true
+    end
+
+end
 
 function MDtest!(gauge_action, U, Dim, nn)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
