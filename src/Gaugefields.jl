@@ -15,8 +15,10 @@ include("./smearing/Abstractsmearing.jl")
 
 include("./action/GaugeActions.jl")
 include("./heatbath/heatbathmodule.jl")
+include("./hmc/hmcmodule.jl")
 include("./smearing/gradientflow.jl")
 
+include("./gadget/obs_measure.jl")
 include("./gadget/hmc_core.jl")
 
 function __init__()
@@ -130,6 +132,12 @@ import .heatbath_module:
     Heatbath,
     Heatbath_update,
     overrelaxation!
+import .HMC_module:
+    calc_action,
+    U_update!,
+    P_update!,
+    Flux_update!,
+    set_comb
 import .Bridge_format: save_textdata, load_BridgeText!
 import Wilsonloop: loops_staple
 import .Abstractsmearing_module:
@@ -213,7 +221,15 @@ import .GaugeAction_module:
     evaluate_GaugeAction
 
 
-import .HMC_core_module: MDstep!, MDstep_dynB!, set_comb
+import .Obs_measure_module:
+    calculate_topological_charge_plaq,
+    calculate_topological_charge_clover,
+    calculate_topological_charge_improved,
+    calculate_gauge_coupling_plaq,
+    calculate_gauge_coupling_clover,
+    calculate_energy_density,
+    calc_Q_gradflow!
+import .HMC_core_module: MDstep!
 
 import .Temporalfields_module: Temporalfields, unused!, get_temp
 export Temporalfields, unused!, get_temp
@@ -223,6 +239,7 @@ export IdentityGauges,
 export B_RandomGauges, B_TfluxGauges, thooftFlux_4D_B_at_bndry
 export ILDG, load_gaugefield!, save_binarydata
 export SU2update_KP!, SUNupdate_matrix!, SU3update_matrix!
+export calc_action, U_update!, P_update!, Flux_update!, set_comb
 export map_U!
 export evaluate_gaugelinks_evenodd!, normalize!, normalize3!, normalizeN!
 export loops_staple
@@ -257,8 +274,13 @@ export write_to_numpyarray, map_U_sequential!
 export load_binarydata!
 export loadU, saveU
 
-
-export MDstep!, MDstep_dynB!, set_comb
-
+export calculate_topological_charge_plaq,
+    calculate_topological_charge_clover,
+    calculate_topological_charge_improved,
+    calculate_gauge_coupling_plaq,
+    calculate_gauge_coupling_clover,
+    calculate_energy_density,
+    calc_Q_gradflow!
+export MDstep!
 
 end
