@@ -169,7 +169,33 @@ using Gaugefields
 using LinearAlgebra
 
 function readme4()
+function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, temps; displayon=true)
+    Δτ = 1.0 / MDsteps
+    gauss_distribution!(p)
+    Sold = calc_action(gauge_action, U, p)
+    substitute_U!(Uold, U)
 
+    for itrj = 1:MDsteps
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action, temps)
+
+        P_update!(U, p, 1.0, Δτ, Dim, gauge_action, temps)
+
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action, temps)
+    end
+    Snew = calc_action(gauge_action, U, p)
+    if displayon
+        println("Sold = $Sold, Snew = $Snew")
+        println("Snew - Sold = $(Snew-Sold)")
+    end
+    ratio = min(1, exp(-Snew + Sold))
+    if rand() > ratio
+        substitute_U!(U, Uold)
+        return false
+    else
+        return true
+    end
+end
+    
     function HMC_test_4D(NX,NY,NZ,NT,NC,β)
         Dim = 4
         Nwing = 0
@@ -244,7 +270,33 @@ using Gaugefields
 using LinearAlgebra
 
 function readme5()
+function MDstep!(gauge_action, U, B, p, MDsteps, Dim, Uold, temps; displayon=true)
+    Δτ = 1.0 / MDsteps
+    gauss_distribution!(p)
+    Sold = calc_action(gauge_action, U, B, p)
+    substitute_U!(Uold, U)
 
+    for itrj = 1:MDsteps
+        U_update!(U,    p, 0.5, Δτ, Dim, gauge_action, temps)
+
+        P_update!(U, B, p, 1.0, Δτ, Dim, gauge_action, temps)
+
+        U_update!(U,    p, 0.5, Δτ, Dim, gauge_action, temps)
+    end
+    Snew = calc_action(gauge_action, U, B, p)
+    if displayon
+        println("Sold = $Sold, Snew = $Snew")
+        println("Snew - Sold = $(Snew-Sold)")
+    end
+    ratio = min(1, exp(-Snew + Sold))
+    if rand() > ratio
+        substitute_U!(U, Uold)
+        return false
+    else
+        return true
+    end
+end
+    
     function HMC_test_4D_tHooft(NX,NY,NZ,NT,NC,Flux,β)
         Dim = 4
         Nwing = 0
@@ -418,23 +470,6 @@ function readme6()
             println("accepted! flux_old = ", flux_old, " -> flux_new = ", flux)
             return true
         end
-    end
-
-    function Flux_update!(B,flux)
-        NC  = B[1,2].NC
-        NDW = B[1,2].NDW
-        NX  = B[1,2].NX
-        NY  = B[1,2].NY
-        NZ  = B[1,2].NZ
-        NT  = B[1,2].NT
-
-        i = rand(1:6)
-        flux[i] += rand(-1:1)
-        flux[i] %= NC
-        flux[i] += (flux[i] < 0) ? NC : 0
-        #    flux[:] = rand(0:NC-1,6)
-        B = Initialize_Bfields(NC,flux,NDW,NX,NY,NZ,NT,condition = "tflux")
-
     end
 
     function HMC_test_4D_dynamicalB(NX,NY,NZ,NT,NC,β)
